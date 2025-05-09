@@ -22,3 +22,10 @@ This project is about creating a simple 4-stage pipelined processor in Verilog t
  Pipeline registers are used between each stage to hold the instruction and data as they pass through the processor. This allows each stage to operate independently and process a different instruction every cycle. For example, while one instruction is being executed in the EX stage, another one can be decoded in the ID stage, and a third can be fetched from memory in the IF stage. This overlapping of instruction execution is what makes pipelining efficient. A testbench was also written to simulate and verify the processor's behavior. The testbench loads instructions into memory, sets initial values in the registers, and runs the processor over several clock cycles. The simulation was observed using a waveform viewer, and it clearly showed how instructions move through each stage of the pipeline.
 
 The waveform results confirmed that the pipeline works correctly. Instructions entered and exited each stage in order, the ALU performed the correct operations, and the register file was updated with the right results at the right time. The processor handled all three instruction types without errors or conflicts. This project demonstrates a solid understanding of pipelined processor architecture and how to implement it using Verilog. It provides a good foundation for learning more complex CPU design topics such as hazard detection, forwarding, branching, and control logic. 
+
+
+<img width="327" alt="Image" src="https://github.com/user-attachments/assets/db0c6f9b-49d4-46e6-b8c8-94fa00b858db" />
+
+<img width="286" alt="Image" src="https://github.com/user-attachments/assets/dbc52e8e-9051-4c1e-9df1-96e80468601e" />
+
+<img width="953" alt="Image" src="https://github.com/user-attachments/assets/884a4f6d-22bc-4baf-8efc-b7517e0ff109" />
