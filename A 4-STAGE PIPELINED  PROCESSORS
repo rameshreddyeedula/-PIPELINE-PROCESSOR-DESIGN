@@ -1,0 +1,133 @@
+#DESIGN A 4-STAGE PIPELINED PROCESSOR WITH BASIC INSTRUCTIONS LIKE ADD, SUB, AND LOAD
+
+#CODE
+// Code your design here
+module PipelinedProcessor(input clk);
+
+// ===== Instruction Memory =====
+reg [15:0] instr_mem [0:15];
+initial begin
+    instr_mem[0] = 16'b0001_0001_0010_0011; // ADD R1 = R2 + R3
+    instr_mem[1] = 16'b0010_0100_0101_0110; // SUB R4 = R5 - R6
+    instr_mem[2] = 16'b0011_0111_1000_0000; // LOAD R7 = MEM[R8 + 0]
+end
+
+// ===== Data Memory =====
+reg [15:0] data_mem [0:15];
+initial begin
+    data_mem[8] = 16'd55;
+end
+
+// ===== Registers =====
+reg [15:0] regfile [0:15];
+initial begin
+    regfile[2] = 10;  // R2
+    regfile[3] = 20;  // R3
+    regfile[5] = 30;  // R5
+    regfile[6] = 15;  // R6
+    regfile[8] = 8;   // R8
+end
+
+reg [3:0] PC = 0;
+
+// ===== Pipeline Registers =====
+reg [15:0] IF_ID_instr = 16'hxxxx;
+reg [3:0]  ID_EX_opcode = 4'hx, ID_EX_rd = 4'hx, ID_EX_rs1 = 4'hx, ID_EX_rs2 = 4'hx;
+reg [15:0] ID_EX_val1 = 16'hxxxx, ID_EX_val2 = 16'hxxxx;
+reg [3:0]  EX_MEM_rd = 4'hx;
+reg [15:0] EX_MEM_result = 16'h0000;
+reg [3:0]  MEM_WB_rd = 4'hx;
+reg [15:0] MEM_WB_result = 16'h0000;
+reg [3:0]  MEM_WB_opcode = 4'hx;
+
+always @(posedge clk) begin
+    // IF
+    IF_ID_instr <= (PC < 3) ? instr_mem[PC] : 16'hxxxx;
+    PC <= PC + 1;
+
+    // ID
+    ID_EX_opcode <= IF_ID_instr[15:12];
+    ID_EX_rd     <= IF_ID_instr[11:8];
+    ID_EX_rs1    <= IF_ID_instr[7:4];
+    ID_EX_rs2    <= IF_ID_instr[3:0];
+    ID_EX_val1   <= regfile[IF_ID_instr[7:4]];
+    ID_EX_val2   <= regfile[IF_ID_instr[3:0]];
+
+    // EX
+    EX_MEM_rd <= ID_EX_rd;
+    case (ID_EX_opcode)
+        4'b0001: EX_MEM_result <= ID_EX_val1 + ID_EX_val2;
+        4'b0010: EX_MEM_result <= ID_EX_val1 - ID_EX_val2;
+        4'b0011: EX_MEM_result <= data_mem[ID_EX_val1 + ID_EX_rs2];
+        default: EX_MEM_result <= 0;
+    endcase
+
+    // WB
+    MEM_WB_rd     <= EX_MEM_rd;
+    MEM_WB_result <= EX_MEM_result;
+    MEM_WB_opcode <= ID_EX_opcode;
+
+    if (MEM_WB_opcode == 4'b0001 || MEM_WB_opcode == 4'b0010 || MEM_WB_opcode == 4'b0011)
+        regfile[MEM_WB_rd] <= MEM_WB_result;
+end
+
+task format_register;
+    input  [3:0] rnum;
+    input  [15:0] val;
+    output string result;
+    begin
+        if (^rnum === 1'bx || ^val === 1'bx)
+            result = "Rx (x)";
+        else
+            $sformat(result, "R%0d (%0d)", rnum, val);
+    end
+endtask
+
+task show_pipeline;
+    string rs1_str, rs2_str, wb_str;
+
+    begin
+        format_register(ID_EX_rs1, ID_EX_val1, rs1_str);
+        format_register(ID_EX_rs2, ID_EX_val2, rs2_str);
+        format_register(MEM_WB_rd, MEM_WB_result, wb_str);
+
+        $display("---- Clock Cycle ----");
+        $display("IF  : Instruction = %b", IF_ID_instr === 16'hxxxx ? 16'bxxxxxxxxxxxxxxxx : IF_ID_instr);
+        $display("ID  : Opcode = %b, RS1 = %s, RS2 = %s",
+                 ID_EX_opcode === 4'hx ? 4'bxxxx : ID_EX_opcode,
+                 rs1_str, rs2_str);
+        $display("EX  : Result = %0d", EX_MEM_result);
+        $display("WB  : Write %s = %0d", wb_str, MEM_WB_result);
+        $display("----------------------\n");
+    end
+endtask
+
+endmodule
+
+
+
+#TESTBENCH
+
+// Code your testbench here
+module PipelinedProcessor_TB;
+    reg clk = 0;
+    always #5 clk = ~clk;
+
+    PipelinedProcessor uut (.clk(clk));
+
+    initial begin
+        $dumpfile("dump.vcd"); // for GTKWave
+        $dumpvars(0, uut);
+
+        $display("DELIVERABLE: A FUNCTIONAL DESIGN");
+        $display("WITH SIMULATION SHOWING EACH");
+        $display("STAGE'S OPERATION\n");
+
+        repeat (10) begin
+            #10;
+            uut.show_pipeline();
+        end
+
+        $finish;
+    end
+endmodule
